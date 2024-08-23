@@ -23,30 +23,26 @@ smokeBot = BotApp
 
 
 updateToAction :: Update -> Model -> Maybe Action
-updateToAction update _ = do
-  msg <- updateMessage update
-  mText <- messageText msg
-  let wordsText = Text.words mText 
-  if not (null wordsText) then
-    case head wordsText of
-      "/start" -> do
-        user <- messageFrom msg
-        let username = fromMaybe "Nothing" (userUsername user)
-        return $ AddToSql username
-      "/addfriend" -> 
-        if length wordsText == 2 then do
-          user <- messageFrom msg
-          let username = fromMaybe "Nothing" (userUsername user)
-          let friendname = last wordsText
-          if Text.head  friendname == '@' then 
-            return $ AddFriend username friendname
-          else 
-            Nothing
-        else
-          Nothing
-      _ -> Nothing
-  else
-    Nothing
+updateToAction update _ = 
+  updateMessage update >>= 
+  \msg -> messageText msg >>= 
+  \mText -> let wordsText = Text.words mText 
+  in guard (not $ null wordsText) *> 
+     case head wordsText of
+       "/start" -> 
+         AddToSql <$> (fromMaybe "Nothing" <$> userUsername <$> messageFrom msg)
+       "/addfriend" ->
+         guard (length wordsText == 2) *> 
+         let friendname = last wordsText
+         in guard (Text.head friendname == '@') *>
+            (AddFriend <$> (fromMaybe "Nothing" <$> userUsername <$> messageFrom msg)
+                       <*> pure friendname)
+       _ -> Nothing
+
+
+guard :: Bool -> Maybe ()
+guard True  = Just ()
+guard False = Nothing
 
 
 handleAction :: Action -> Model -> Eff Action Model
@@ -94,7 +90,13 @@ main = do
   disconnect conn
 
   fconn <- connectSqlite3 "friends.db"
-  run fconn "CREATE TABLE IF NOT EXISTS Friends (ID INTEGER PRIMARY KEY AUTOINCREMENT, WeakID Text, StrongID Text)" []
+  run fconn ("CREATE TABLE IF NOT EXISTS Friends (" ++
+           "ID INTEGER PRIMARY KEY AUTOINCREMENT, " ++
+           "WeakID Text, " ++
+           "StrongID Text, " ++
+           "FOREIGN KEY (WeakID) REFERENCES names(tgID), " ++
+           "FOREIGN KEY (StrongID) REFERENCES names(tgID))") []
+
   run fconn "CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_friendship ON Friends (WeakID, StrongID)" []
   putStrLn "Please, enter Telegram bot's API token:"
   commit fconn
@@ -103,4 +105,3 @@ main = do
   token <- Token . Text.pack <$> getLine
   env <- defaultTelegramClientEnv token
   startBot_ smokeBot env
-
