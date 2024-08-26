@@ -25,7 +25,8 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      DB
+      TG
   other-modules:
       Paths_CIGARETTS
   autogen-modules:
