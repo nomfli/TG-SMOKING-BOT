@@ -20,6 +20,8 @@ data TableFriends = TableFriends
 
 
 
+both:: (a -> b) -> (a, a) -> (b, b)
+both f (x, x') = (f x, f x')
 
 logMsg :: MonadIO m => String -> m ()
 logMsg msg = liftIO $ putStrLn msg
@@ -84,7 +86,6 @@ addFriend username friendname = do
     conn <- connectSqlite3 "Users.db"
     maybeUser <- getUser username
     maybeFriend <- getUser friendname
-    
     result <- case (maybeUser, maybeFriend) of
         (Just user, Just friend) -> do
             let usrId = userid user
@@ -100,6 +101,22 @@ addFriend username friendname = do
     
     disconnect conn
     return result
+
+
+addFriend :: Maybe (TableUser,  TableUser) -> IO (Maybe TableFriends)
+addFriend x 
+    | x == Just (username, friendname) = do  
+        conn <- connectSqlite3 "Users.db"
+        let usrId = userid user
+        let frndId = userid friend
+        let query = "INSERT OR IGNORE INTO Friends (StrongId, WeakId) VALUES (?,?)"
+        _ <- run conn query [toSql usrId, toSql frndId]
+        commit conn
+        putStrLn "Friend added successfully"
+        return $ Just TableFriends { strongId = usrId, weakId = frndId }
+    | otherwise = do 
+        putStrLn "One of the users was not found"
+        return Nothing
 
 
 getFriends :: Connection -> Text -> IO [Text] 
