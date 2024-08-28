@@ -1,12 +1,10 @@
-module DB where
+module DB (TableUser, TableFriends, createDB, addUser, getUser, addFriend) where
 import Prelude hiding (id)
 import Control.Monad.IO.Class (liftIO, MonadIO)
-import Database.HDBC (run, commit, disconnect, toSql, fromSql, quickQuery',quickQuery)
+import Database.HDBC (run, commit, disconnect, toSql, fromSql, quickQuery')
 import Database.HDBC.Sqlite3 (Connection, connectSqlite3)
 import qualified Data.Text                        as Text
 import Data.Text (Text)
-import Control.Exception (catch, SomeException)
-import Control.Monad.Trans.Writer (WriterT)
 
 data TableUser = TableUser
     { userid    :: Int
