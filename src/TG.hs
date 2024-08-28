@@ -34,12 +34,13 @@ sendMessageRequest chatId text = SendMessageRequest
     }
 
 smokingButton :: KeyboardButton
+smokingButton = smokingButton
     { keyboardButtonText = Text.pack "/smoke"
-      keyboardButtonRequestUsers = Nothing
-      keyboardButtonRequestChat =  Nothing   
-      keyboardButtonRequestLocation = Just True
-      keyboardButtonRequestPoll = Nothing
-      keyboardButtonWebApp = Nothing
+    , keyboardButtonRequestUsers = Nothing
+    , keyboardButtonRequestChat =  Nothing   
+    , keyboardButtonRequestLocation = Just True
+    , keyboardButtonRequestPoll = Nothing
+    , keyboardButtonWebApp = Nothing
     }
 
 both:: (a -> b) -> (a, a) -> (b, b)
