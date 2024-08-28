@@ -1,9 +1,11 @@
 module DB (TableUser, TableFriends, createDB, addUser, getUser, addFriend) where
 import Prelude hiding (id)
 import Database.HDBC (run, commit, disconnect, toSql, fromSql, quickQuery')
+import Control.Monad.IO.Class (liftIO)
 import Database.HDBC.Sqlite3 (connectSqlite3)
 import qualified Data.Text                        as Text
 import Data.Text (Text)
+import Control.Monad.Trans.Maybe (MaybeT, hoistMaybe)
 
 data TableUser = TableUser
     { userid    :: Int
@@ -23,7 +25,7 @@ data TableFriends = TableFriends
 -- logMsg msg = liftIO $ putStrLn msg
 
 
-createDB :: IO()
+createDB :: IO ()
 createDB = do
   conn <- connectSqlite3 "Users.db"
   _ <- run conn "CREATE TABLE IF NOT EXISTS names (ID INTEGER PRIMARY KEY AUTOINCREMENT, tgusername TEXT UNIQUE)" []
@@ -53,41 +55,43 @@ createDB = do
 
 
 
-addUser ::  Text -> IO (Maybe TableUser)
+addUser ::  Text -> MaybeT IO TableUser
 addUser tgusername = do
-    conn <- connectSqlite3 "Users.db"
+    conn <- liftIO $ connectSqlite3 "Users.db"
     
     let query = "INSERT OR IGNORE INTO names (tgusername) VALUES (?)"
-    _ <- run conn query [toSql tgusername]
-    commit conn
-    disconnect conn
-    putStrLn $ "Attempted to add user " ++ Text.unpack tgusername ++ " to DB"
+    _ <- liftIO $ run conn query [toSql tgusername]
+    liftIO $ commit conn
+    liftIO $ disconnect conn
+    liftIO $ putStrLn $ "Attempted to add user " ++ Text.unpack tgusername ++ " to DB"
     getUser tgusername
 
 
 
-getUser :: Text -> IO (Maybe TableUser)
+getUser :: Text -> MaybeT IO TableUser
 getUser un = do
-    conn <- connectSqlite3 "Users.db"
+    conn <- liftIO $ connectSqlite3 "Users.db"
     let query = "SELECT id, tgusername FROM names WHERE tgusername = ?"
-    rows <- quickQuery' conn query [toSql $ Text.unpack un]
-    disconnect conn
+    rows <- liftIO $ quickQuery' conn query [toSql $ Text.unpack un]
+    liftIO $ disconnect conn
     case rows of
-      [row] -> return $ Just TableUser { userid = fromSql $ head row
+      [row] -> return $ TableUser { userid = fromSql $ head row
                                        , username = fromSql $ row !! 1
                                        }
-      _     -> return Nothing
+      _     -> hoistMaybe Nothing
 
 
 
-addFriend :: TableUser -> TableUser -> IO (Maybe TableFriends)
+addFriend :: TableUser -> TableUser -> MaybeT IO TableFriends
 addFriend user friend = do
-    conn <- connectSqlite3 "Users.db"
+    conn <- liftIO $ connectSqlite3 "Users.db"
     let usrId = userid user
     let frndId = userid friend
     let query = "INSERT OR IGNORE INTO Friends (StrongId, WeakId) VALUES (?,?)"
-    _ <- run conn query [toSql usrId, toSql frndId]
-    commit conn
-    putStrLn "Friend added successfully"
-    disconnect conn
-    return $ Just TableFriends { strongId = usrId, weakId = frndId }
+    res <- liftIO $ run conn query [toSql usrId, toSql frndId]
+    liftIO $ commit conn
+    liftIO $ putStrLn "Friend added successfully"
+    liftIO $ disconnect conn
+    case res of
+        1 -> return TableFriends { strongId = usrId, weakId = frndId }
+        _ -> hoistMaybe Nothing

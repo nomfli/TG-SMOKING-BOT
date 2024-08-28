@@ -6,6 +6,7 @@ import Control.Monad              (guard)
 import Telegram.Bot.API
 import Telegram.Bot.Simple
 import DB
+import Control.Monad.Trans.Maybe (MaybeT(runMaybeT))
 
 type Model = ()
 data Action = AddToSql Text | AddFriend Text Text | Smoke TableUser
@@ -34,8 +35,8 @@ smokeBot = BotApp
 --     }
 
 
-both:: (a -> b) -> (a, a) -> (b, b)
-both f (x, x') = (f x, f x')
+-- both:: (a -> b) -> (a, a) -> (b, b)
+-- both f (x, x') = (f x, f x')
 
 
 updateToAction :: Update -> Model -> Maybe Action
@@ -64,11 +65,17 @@ handleAction :: Action -> Model -> Eff Action Model
 handleAction action model =
     case action of
 
-        AddToSql username -> model <# liftIO
-            (addUser username)
+        AddToSql username -> model <# do
+            _ <- liftIO (runMaybeT $ addUser username) -- TODO: error handling
+            return ()
 
-        AddFriend username friendname -> model <# liftIO
-          (addFriend =<< (sequenceA . both getUser) (username, Text.tail friendname))
+        AddFriend username friendname -> model <# do
+            mu1 <- liftIO (runMaybeT $ getUser username)
+            mu2 <- liftIO (runMaybeT $ getUser friendname)
+            _ <- case (mu1, mu2) of
+                (Just u1, Just u2) -> liftIO $ runMaybeT $ addFriend u1 u2
+                _ -> return Nothing
+            return ()
 
         _ -> return model
 
