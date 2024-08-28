@@ -1,12 +1,24 @@
 module DB where
-
+import Prelude hiding (id)
 import Control.Monad.IO.Class (liftIO, MonadIO)
-import Database.HDBC (run, commit, disconnect, toSql, fromSql, quickQuery')
+import Database.HDBC (run, commit, disconnect, toSql, fromSql, quickQuery',quickQuery)
 import Database.HDBC.Sqlite3 (Connection, connectSqlite3)
 import qualified Data.Text                        as Text
 import Data.Text (Text)
 import Control.Exception (catch, SomeException)
 import Control.Monad.Trans.Writer (WriterT)
+
+data TableUser = TableUser
+    { userid    :: Int
+    , username  :: Text
+    }
+
+data TableFriends = TableFriends
+    { strongId :: Int
+    , weakId :: Int
+    }
+
+
 
 
 logMsg :: MonadIO m => String -> m ()
@@ -16,65 +28,78 @@ logMsg msg = liftIO $ putStrLn msg
 createDB :: IO()
 createDB = do
   conn <- connectSqlite3 "Users.db"
-  run conn "CREATE TABLE IF NOT EXISTS names (ID INTEGER PRIMARY KEY AUTOINCREMENT, tgID TEXT UNIQUE)" []
+  run conn "CREATE TABLE IF NOT EXISTS names (ID INTEGER PRIMARY KEY AUTOINCREMENT, tgusername TEXT UNIQUE)" []
   run conn ("CREATE TABLE IF NOT EXISTS Friends (" ++
            "ID INTEGER PRIMARY KEY AUTOINCREMENT, " ++
-           "WeakID Text, " ++
-           "StrongID Text, " ++
-           "FOREIGN KEY (WeakID) REFERENCES names(tgID), " ++
-           "FOREIGN KEY (StrongID) REFERENCES names(tgID))") []
+           "WeakID INTEGER, " ++
+           "StrongID INTEGER, " ++
+           "FOREIGN KEY (WeakID) REFERENCES names(tgusername), " ++
+           "FOREIGN KEY (StrongID) REFERENCES names(tgusername))") []
   run conn "CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_friendship ON Friends (WeakID, StrongID)" []
   commit conn
   disconnect conn
 
 -- it's my thing about how addUser should looks in the future probably
 -- addUser :: Text -> WriterT () IO ()
--- addUser tgID = do
+-- addUser tgusername = do
 --   conn <- liftIO $ connectSqlite3 "Users.db"
---    let query = "INSERT INTO tgId (tgID) VALUES (?)"
---    liftIO $ catch (run conn query [toSql tgID] >> commit conn >> putStrLn successMsg)
+--    let query = "INSERT INTO tgusername (tgusername) VALUES (?)"
+--    liftIO $ catch (run conn query [toSql tgusername] >> commit conn >> putStrLn successMsg)
 --                   (\e -> putStrLn $ "Failed to add user to db: " ++ 
---                   Text.unpack tgID ++ 
+--                   Text.unpack tgusername ++ 
 --                   "\nSQL Error: " ++ 
 --                   show (e :: SomeException))
 --    liftIO $ disconnect conn
 --  where
---    successMsg = "Successfully added user to db: " ++ Text.unpack tgID
+--    successMsg = "Successfully added user to db: " ++ Text.unpack tgusername
 
 
 
 addUser ::  Text -> IO ()
-addUser tgID = do
+addUser tgusername = do
     conn <- connectSqlite3 "Users.db"
-    let query = "INSERT OR IGNORE INTO names (tgID) VALUES (?)"
-    run conn query [toSql tgID]
+    let query = "INSERT OR IGNORE INTO names (tgusername) VALUES (?)"
+    run conn query [toSql tgusername]
     commit conn
     disconnect conn
-    putStrLn $ "Attempted to add user " ++ Text.unpack tgID ++ " to DB"
+    putStrLn $ "Attempted to add user " ++ Text.unpack tgusername ++ " to DB"
 
-userExists :: Text -> IO Bool
-userExists username = do
+
+
+getUser :: Text -> IO (Maybe TableUser)
+getUser username = do
     conn <- connectSqlite3 "Users.db"
-    result <- quickQuery' conn "SELECT COUNT(*) FROM names WHERE tgID = ?" [toSql username]
+    let query = "SELECT id, tgusername FROM names WHERE tgusername = ?"
+    rows <- quickQuery' conn query [toSql $ Text.unpack username]
     disconnect conn
-    let count = fromSql (head (head result)) :: Integer
-    return (count /= 0)
+    case rows of
+      [row] -> return $ Just TableUser { userid = fromSql (row !! 0)
+                                       , username = fromSql (row !! 1)
+                                       }
+      _     -> return Nothing
 
 
-addFriend :: (Text, Text) -> IO ()
-addFriend (username, friendname) = do
-    exists1 <- userExists username
-    exists2 <- userExists friendname
-    if exists1 && exists2
-        then do
-            conn <- connectSqlite3 "Users.db"
-            run conn "INSERT OR IGNORE INTO Friends (WeakID, StrongID) VALUES (?, ?)" [toSql username, toSql friendname]
+addFriend :: Text -> Text -> IO (Maybe TableFriends)
+addFriend username friendname = do 
+    conn <- connectSqlite3 "Users.db"
+    maybeUser <- getUser username
+    maybeFriend <- getUser friendname
+    
+    result <- case (maybeUser, maybeFriend) of
+        (Just user, Just friend) -> do
+            let usrId = userid user
+            let frndId = userid friend
+            let query = "INSERT OR IGNORE INTO Friends (StrongId, WeakId) VALUES (?,?)"
+            _ <- run conn query [toSql usrId, toSql frndId]
             commit conn
-            putStrLn $ "Successfully added friend: " ++ Text.unpack username ++ " -> " ++ Text.unpack friendname
-            disconnect conn
-        else
-            putStrLn $ "One or both users not found: " ++ Text.unpack username ++ ", " ++ Text.unpack friendname
-
+            putStrLn "Friend added successfully"
+            return $ Just TableFriends { strongId = usrId, weakId = frndId }
+        _ -> do
+            putStrLn "One of the users was not found"
+            return Nothing
+    
+    disconnect conn
+    return result
 
 
 getFriends :: Connection -> Text -> IO [Text] 

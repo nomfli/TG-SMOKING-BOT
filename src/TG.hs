@@ -8,7 +8,8 @@ import Telegram.Bot.Simple
 import DB
 
 type Model = ()
-data Action = AddToSql Text | AddFriend Text Text
+data Action = AddToSql Text | AddFriend Text Text 
+
 
 
 
@@ -47,12 +48,13 @@ updateToAction update _ =
     case (Text.unpack command) of
         
         "/start" -> 
-            AddToSql <$> (userUsername =<< (messageFrom msg))
+            AddToSql <$> (Text.append $ Text.singleton  '@') <$> (userUsername =<< (messageFrom msg))
 
         "/addfriend" ->
          guard (Prelude.length wordsText == 2)
             *> guard (Text.head (Prelude.last wordsText) == '@')
             *> (AddFriend <$> (userUsername =<< (messageFrom msg)) <*> (Just $ Prelude.last wordsText))
+        
         _ -> Nothing
     
 
