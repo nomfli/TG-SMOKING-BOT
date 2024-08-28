@@ -18,10 +18,9 @@ data TableFriends = TableFriends
     , weakId :: Int
     }
 
-
-
-both:: (a -> b) -> (a, a) -> (b, b)
-both f (x, x') = (f x, f x')
+toPair :: (Maybe a, Maybe b) -> Maybe (a, b)
+toPair (Just y, Just z) = Just (y, z)
+toPair _                = Nothing
 
 logMsg :: MonadIO m => String -> m ()
 logMsg msg = liftIO $ putStrLn msg
@@ -82,21 +81,20 @@ getUser username = do
 
 
 
-
-addFriend :: Maybe (TableUser,  TableUser) -> IO (Maybe TableFriends)
-addFriend x 
-    | x == Just (username, friendname) = do  
-        conn <- connectSqlite3 "Users.db"
-        let usrId = userid user
-        let frndId = userid friend
-        let query = "INSERT OR IGNORE INTO Friends (StrongId, WeakId) VALUES (?,?)"
-        _ <- run conn query [toSql usrId, toSql frndId]
-        commit conn
-        putStrLn "Friend added successfully"
-        return $ Just TableFriends { strongId = usrId, weakId = frndId }
-    | otherwise = do 
-        putStrLn "One of the users was not found"
-        return Nothing
+addFriend :: (TableUser, TableUser) -> IO (Maybe TableFriends)
+addFriend (Just (user, friend)) = do
+    conn <- connectSqlite3 "Users.db"
+    let usrId = userid user
+    let frndId = userid friend
+    let query = "INSERT OR IGNORE INTO Friends (StrongId, WeakId) VALUES (?,?)"
+    _ <- run conn query [toSql usrId, toSql frndId]
+    commit conn
+    putStrLn "Friend added successfully"
+    disconnect conn
+    return $ Just TableFriends { strongId = usrId, weakId = frndId }
+addFriend Nothing = do
+    putStrLn "One of the users was not found"
+    return Nothing
 
 
 getFriends :: Connection -> Text -> IO [Text] 

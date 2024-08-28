@@ -33,14 +33,6 @@ sendMessageRequest chatId text = SendMessageRequest
 
     }
 
-smokingButton :: KeyboardButton
-    { keyboardButtonText = Text.pack "/smoke"
-      keyboardButtonRequestUsers = Nothing
-      keyboardButtonRequestChat =  Nothing   
-      keyboardButtonRequestLocation = Just True
-      keyboardButtonRequestPoll = Nothing
-      keyboardButtonWebApp = Nothing
-    }
 
 both:: (a -> b) -> (a, a) -> (b, b)
 both f (x, x') = (f x, f x')
@@ -75,7 +67,9 @@ handleAction action model =
         AddToSql username -> model <# liftIO
             (addUser username)
 
-        AddFriend username friendname -> model <# liftIO 
-            (addFriend $ (username, Text.tail friendname))
+        AddFriend username friendname -> model <# liftIO
+          (addFriend =<< (sequenceA . both getUser) (username, Text.tail friendname))
 
-   
+
+
+
