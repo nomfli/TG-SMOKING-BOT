@@ -81,26 +81,6 @@ getUser username = do
       _     -> return Nothing
 
 
-addFriend :: Text -> Text -> IO (Maybe TableFriends)
-addFriend username friendname = do 
-    conn <- connectSqlite3 "Users.db"
-    maybeUser <- getUser username
-    maybeFriend <- getUser friendname
-    result <- case (maybeUser, maybeFriend) of
-        (Just user, Just friend) -> do
-            let usrId = userid user
-            let frndId = userid friend
-            let query = "INSERT OR IGNORE INTO Friends (StrongId, WeakId) VALUES (?,?)"
-            _ <- run conn query [toSql usrId, toSql frndId]
-            commit conn
-            putStrLn "Friend added successfully"
-            return $ Just TableFriends { strongId = usrId, weakId = frndId }
-        _ -> do
-            putStrLn "One of the users was not found"
-            return Nothing
-    
-    disconnect conn
-    return result
 
 
 addFriend :: Maybe (TableUser,  TableUser) -> IO (Maybe TableFriends)

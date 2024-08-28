@@ -8,7 +8,7 @@ import Telegram.Bot.Simple
 import DB
 
 type Model = ()
-data Action = AddToSql Text | AddFriend Text Text 
+data Action = AddToSql Text | AddFriend Text Text | Smoke TableUser
 
 
 
@@ -30,8 +30,17 @@ sendMessageRequest chatId text = SendMessageRequest
     , sendMessageDisableNotification = Nothing
     , sendMessageReplyToMessageId = Nothing
     , sendMessageReplyMarkup = Nothing
+
     }
 
+smokingButton :: KeyboardButton
+    { keyboardButtonText = Text.pack "/smoke"
+      keyboardButtonRequestUsers = Nothing
+      keyboardButtonRequestChat =  Nothing   
+      keyboardButtonRequestLocation = Just True
+      keyboardButtonRequestPoll = Nothing
+      keyboardButtonWebApp = Nothing
+    }
 
 both:: (a -> b) -> (a, a) -> (b, b)
 both f (x, x') = (f x, f x')
