@@ -1,8 +1,7 @@
 module DB (TableUser, TableFriends, createDB, addUser, getUser, addFriend) where
 import Prelude hiding (id)
-import Control.Monad.IO.Class (liftIO, MonadIO)
 import Database.HDBC (run, commit, disconnect, toSql, fromSql, quickQuery')
-import Database.HDBC.Sqlite3 (Connection, connectSqlite3)
+import Database.HDBC.Sqlite3 (connectSqlite3)
 import qualified Data.Text                        as Text
 import Data.Text (Text)
 
@@ -16,25 +15,25 @@ data TableFriends = TableFriends
     , weakId :: Int
     }
 
-toPair :: (Maybe a, Maybe b) -> Maybe (a, b)
-toPair (Just y, Just z) = Just (y, z)
-toPair _                = Nothing
+-- toPair :: (Maybe a, Maybe b) -> Maybe (a, b)
+-- toPair (Just y, Just z) = Just (y, z)
+-- toPair _                = Nothing
 
-logMsg :: MonadIO m => String -> m ()
-logMsg msg = liftIO $ putStrLn msg
+-- logMsg :: MonadIO m => String -> m ()
+-- logMsg msg = liftIO $ putStrLn msg
 
 
 createDB :: IO()
 createDB = do
   conn <- connectSqlite3 "Users.db"
-  run conn "CREATE TABLE IF NOT EXISTS names (ID INTEGER PRIMARY KEY AUTOINCREMENT, tgusername TEXT UNIQUE)" []
-  run conn ("CREATE TABLE IF NOT EXISTS Friends (" ++
+  _ <- run conn "CREATE TABLE IF NOT EXISTS names (ID INTEGER PRIMARY KEY AUTOINCREMENT, tgusername TEXT UNIQUE)" []
+  _ <- run conn ("CREATE TABLE IF NOT EXISTS Friends (" ++
            "ID INTEGER PRIMARY KEY AUTOINCREMENT, " ++
            "WeakID INTEGER, " ++
            "StrongID INTEGER, " ++
            "FOREIGN KEY (WeakID) REFERENCES names(tgusername), " ++
            "FOREIGN KEY (StrongID) REFERENCES names(tgusername))") []
-  run conn "CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_friendship ON Friends (WeakID, StrongID)" []
+  _ <- run conn "CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_friendship ON Friends (WeakID, StrongID)" []
   commit conn
   disconnect conn
 
@@ -54,33 +53,35 @@ createDB = do
 
 
 
-addUser ::  Text -> IO ()
+addUser ::  Text -> IO (Maybe TableUser)
 addUser tgusername = do
     conn <- connectSqlite3 "Users.db"
+    
     let query = "INSERT OR IGNORE INTO names (tgusername) VALUES (?)"
-    run conn query [toSql tgusername]
+    _ <- run conn query [toSql tgusername]
     commit conn
     disconnect conn
     putStrLn $ "Attempted to add user " ++ Text.unpack tgusername ++ " to DB"
+    getUser tgusername
 
 
 
 getUser :: Text -> IO (Maybe TableUser)
-getUser username = do
+getUser un = do
     conn <- connectSqlite3 "Users.db"
     let query = "SELECT id, tgusername FROM names WHERE tgusername = ?"
-    rows <- quickQuery' conn query [toSql $ Text.unpack username]
+    rows <- quickQuery' conn query [toSql $ Text.unpack un]
     disconnect conn
     case rows of
-      [row] -> return $ Just TableUser { userid = fromSql (row !! 0)
-                                       , username = fromSql (row !! 1)
+      [row] -> return $ Just TableUser { userid = fromSql $ head row
+                                       , username = fromSql $ row !! 1
                                        }
       _     -> return Nothing
 
 
 
-addFriend :: (TableUser, TableUser) -> IO (Maybe TableFriends)
-addFriend (Just (user, friend)) = do
+addFriend :: TableUser -> TableUser -> IO (Maybe TableFriends)
+addFriend user friend = do
     conn <- connectSqlite3 "Users.db"
     let usrId = userid user
     let frndId = userid friend
@@ -90,15 +91,3 @@ addFriend (Just (user, friend)) = do
     putStrLn "Friend added successfully"
     disconnect conn
     return $ Just TableFriends { strongId = usrId, weakId = frndId }
-addFriend Nothing = do
-    putStrLn "One of the users was not found"
-    return Nothing
-
-
-getFriends :: Connection -> Text -> IO [Text] 
-getFriends conn username = do
-  conn <- connectSqlite3 "Users.db"
-  let usernameStr = Text.unpack username
-  rows <- quickQuery' conn "SELECT StrongID FROM Friends WHERE WeakID = ?" [toSql usernameStr]
-  disconnect conn
-  return $ map (Text.pack . fromSql . head) rows
