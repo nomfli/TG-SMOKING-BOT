@@ -5,29 +5,29 @@
 
 packages:
 - completed:
-    commit: ed7169d2794e7f6b0639ce7c6629a028726e31bf
+    commit: 88870623f2dec1a44535722e0aa4af9ae9ff07b3
     git: https://github.com/fizruk/telegram-bot-simple.git
     name: telegram-bot-api
     pantry-tree:
-      sha256: b08c1d5fd40619296ff15e96429f885ed19727c5aef9fc0d85143efc0f828ba6
+      sha256: 73f141f0371c10873fb3e5e2450a8021332d407ac819a8b53a0931e362625a14
       size: 19236
     subdir: telegram-bot-api
     version: '7.4'
   original:
-    commit: ed7169d2794e7f6b0639ce7c6629a028726e31bf
+    commit: 88870623f2dec1a44535722e0aa4af9ae9ff07b3
     git: https://github.com/fizruk/telegram-bot-simple.git
     subdir: telegram-bot-api
 - completed:
-    commit: ed7169d2794e7f6b0639ce7c6629a028726e31bf
+    commit: 88870623f2dec1a44535722e0aa4af9ae9ff07b3
     git: https://github.com/fizruk/telegram-bot-simple.git
     name: telegram-bot-simple
     pantry-tree:
-      sha256: 9ce87461051ee2c9abae029a9f9c26fcb3042bb5973bcf75ec3b39ff86bd7d8c
+      sha256: ab419e8476dc010f88fc81b1962e91479384702d13bee9a027d18ede47241414
       size: 1789
     subdir: telegram-bot-simple
-    version: 0.14.1
+    version: 0.14.2
   original:
-    commit: ed7169d2794e7f6b0639ce7c6629a028726e31bf
+    commit: 88870623f2dec1a44535722e0aa4af9ae9ff07b3
     git: https://github.com/fizruk/telegram-bot-simple.git
     subdir: telegram-bot-simple
 - completed:

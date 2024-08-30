@@ -9,7 +9,25 @@ import DB
 import Control.Monad.Trans.Maybe (MaybeT(runMaybeT))
 
 type Model = ()
-data Action = AddToSql Text | AddFriend Text Text | Smoke TableUser
+data Action = AddToSql Text | AddFriend Text Text | Help
+
+helpMsgText :: Text.Text
+helpMsgText = Text.pack $ "Здарова заядлый курильщик, сейчас данный бот умеет всего ничего: \n"
+                      ++ "/help - для просьбы о помощи \n"
+                      ++ "/addfriend @yourfriendname для добавления друга в друзья \n"
+                      ++ "/smoke для того, чтобы твои друзья увидели, где ты начинаешь покур"
+
+
+idTextToRequest :: SomeChatId -> Text -> SendMessageRequest
+idTextToRequest chatId msgText = SendMessageRequest
+    { sendMessageChatId = chatId
+    , sendMessageText = msgText
+    , sendMessageParseMode = Nothing
+    , sendMessageDisableNotification = Nothing
+    , sendMessageReplyToMessageId = Nothing
+    , sendMessageReplyMarkup = Nothing
+    , sendMessageEntities = Nothing
+    }
 
 
 
@@ -50,15 +68,17 @@ updateToAction update _ =
     case Text.unpack command of
 
         "/start" ->
-            AddToSql . Text.append (Text.singleton  '@') <$> (userUsername =<< messageFrom msg)
+         AddToSql . Text.append (Text.singleton  '@') <$> (userUsername =<< messageFrom msg)
+            
 
         "/addfriend" ->
          guard (Prelude.length wordsText == 2)
             *> guard (Text.head (Prelude.last wordsText) == '@')
             *> (AddFriend <$> (userUsername =<< messageFrom msg) <*> Just (Prelude.last wordsText))
-
+            
+        "/help" -> Just Help 
+        
         _ -> Nothing
-
 
 
 handleAction :: Action -> Model -> Eff Action Model
@@ -66,7 +86,7 @@ handleAction action model =
     case action of
 
         AddToSql username -> model <# do
-            _ <- liftIO (runMaybeT $ addUser username) -- TODO: error handling
+            _ <- liftIO (runMaybeT $ addUser username)
             return ()
 
         AddFriend username friendname -> model <# do
@@ -77,6 +97,9 @@ handleAction action model =
                 _ -> return Nothing
             return ()
 
+        Help -> model <# do
+           replyText helpMsgText
+            
         _ -> return model
 
 
