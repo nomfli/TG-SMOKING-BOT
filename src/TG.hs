@@ -9,7 +9,7 @@ import DB
 import Control.Monad.Trans.Maybe (MaybeT(runMaybeT))
 
 type Model = ()
-data Action = AddToSql Text | AddFriend Text Text | Help
+data Action = AddToSql Text | AddFriend Text Text | Help 
 
 helpMsgText :: Text.Text
 helpMsgText = Text.pack $ "Здарова заядлый курильщик, сейчас данный бот умеет всего ничего: \n"
@@ -18,17 +18,26 @@ helpMsgText = Text.pack $ "Здарова заядлый курильщик, с�
                       ++ "/smoke для того, чтобы твои друзья увидели, где ты начинаешь покур"
 
 
-idTextToRequest :: SomeChatId -> Text -> SendMessageRequest
-idTextToRequest chatId msgText = SendMessageRequest
-    { sendMessageChatId = chatId
-    , sendMessageText = msgText
-    , sendMessageParseMode = Nothing
-    , sendMessageDisableNotification = Nothing
-    , sendMessageReplyToMessageId = Nothing
-    , sendMessageReplyMarkup = Nothing
-    , sendMessageEntities = Nothing
+smokeButton :: KeyboardButton
+smokeButton = KeyboardButton
+    { keyboardButtonText         = Text.pack "SMOKE"
+    , keyboardButtonRequestUsers = Nothing
+    , keyboardButtonRequestChat  = Nothing
+    , keyboardButtonRequestContact = Nothing
+    , keyboardButtonRequestLocation = Just True
+    , keyboardButtonRequestPoll  = Nothing
+    , keyboardButtonWebApp       = Nothing
     }
 
+startKeyboard :: ReplyKeyboardMarkup
+startKeyboard = ReplyKeyboardMarkup
+    { replyKeyboardMarkupKeyboard = [[smokeButton]]
+    , replyKeyboardMarkupResizeKeyboard = Just True
+    , replyKeyboardMarkupOneTimeKeyboard = Just True
+    , replyKeyboardMarkupSelective = Nothing
+    , replyKeyboardMarkupInputFieldSelector = Nothing
+    , replyKeyboardMarkupIsPersistent = Nothing
+    }
 
 
 
@@ -51,7 +60,6 @@ smokeBot = BotApp
 --     , sendMessageReplyMarkup = Nothing
 
 --     }
-
 
 -- both:: (a -> b) -> (a, a) -> (b, b)
 -- both f (x, x') = (f x, f x')
@@ -87,6 +95,8 @@ handleAction action model =
 
         AddToSql username -> model <# do
             _ <- liftIO (runMaybeT $ addUser username)
+            reply (toReplyMessage helpMsgText)
+             { replyMessageReplyMarkup = Just (SomeReplyKeyboardMarkup startKeyboard) }
             return ()
 
         AddFriend username friendname -> model <# do
@@ -99,6 +109,8 @@ handleAction action model =
 
         Help -> model <# do
            replyText helpMsgText
+
+        
             
         _ -> return model
 
