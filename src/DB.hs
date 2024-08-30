@@ -17,13 +17,6 @@ data TableFriends = TableFriends
     , weakId :: Int
     }
 
--- toPair :: (Maybe a, Maybe b) -> Maybe (a, b)
--- toPair (Just y, Just z) = Just (y, z)
--- toPair _                = Nothing
-
--- logMsg :: MonadIO m => String -> m ()
--- logMsg msg = liftIO $ putStrLn msg
-
 
 createDB :: IO ()
 createDB = do
@@ -39,19 +32,6 @@ createDB = do
   commit conn
   disconnect conn
 
--- it's my thing about how addUser should looks in the future probably
--- addUser :: Text -> WriterT () IO ()
--- addUser tgusername = do
---   conn <- liftIO $ connectSqlite3 "Users.db"
---    let query = "INSERT INTO tgusername (tgusername) VALUES (?)"
---    liftIO $ catch (run conn query [toSql tgusername] >> commit conn >> putStrLn successMsg)
---                   (\e -> putStrLn $ "Failed to add user to db: " ++ 
---                   Text.unpack tgusername ++ 
---                   "\nSQL Error: " ++ 
---                   show (e :: SomeException))
---    liftIO $ disconnect conn
---  where
---    successMsg = "Successfully added user to db: " ++ Text.unpack tgusername
 
 
 
@@ -95,3 +75,28 @@ addFriend user friend = do
     case res of
         1 -> return TableFriends { strongId = usrId, weakId = frndId }
         _ -> hoistMaybe Nothing
+
+
+getFriends :: TableUser -> MaybeT IO [TableUser]
+getFriends user = do
+    conn <- liftIO $ connectSqlite3 "Users.db"
+    let usrId = userid user
+    let query = Text.concat $ map Text.pack
+            [ "WITH MutualFriends AS ("
+            , " SELECT f1.WeakId AS mutual_friend_id"
+            , " FROM Friends f1"
+            , " JOIN Friends f2 ON f1.WeakId = f2.StrongId"
+            , " AND f1.StrongId = f2.WeakId"
+            , " WHERE f1.StrongId = ?"
+            , ")"
+            , " SELECT n.id, n.tgusernames"
+            , " FROM names n"
+            , " JOIN MutualFriends mf ON n.id = mf.mutual_friend_id;"
+            ]
+    result <- liftIO $ quickQuery' conn (Text.unpack query) [toSql usrId]
+    liftIO $ disconnect conn
+    let users = map (\row -> TableUser
+                          { userid = fromSql (row !! 0)
+                          , username = fromSql (row !! 1)
+                          }) result
+    return users

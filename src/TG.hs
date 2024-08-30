@@ -9,7 +9,7 @@ import DB
 import Control.Monad.Trans.Maybe (MaybeT(runMaybeT))
 
 type Model = ()
-data Action = AddToSql Text | AddFriend Text Text | Help 
+data Action = AddToSql Text | AddFriend Text Text | Help | SMOKE Location 
 
 helpMsgText :: Text.Text
 helpMsgText = Text.pack $ "Здарова заядлый курильщик, сейчас данный бот умеет всего ничего: \n"
@@ -41,6 +41,7 @@ startKeyboard = ReplyKeyboardMarkup
 
 
 
+
 smokeBot :: BotApp Model Action
 smokeBot = BotApp
   { botInitialModel = ()
@@ -49,20 +50,6 @@ smokeBot = BotApp
   , botJobs         = []
   }
 
-
--- sendMessageRequest :: SomeChatId -> Text -> SendMessageRequest
--- sendMessageRequest chatId text = SendMessageRequest
---     { sendMessageChatId = chatId
---     , sendMessageText = text
---     , sendMessageParseMode = Nothing
---     , sendMessageDisableNotification = Nothing
---     , sendMessageReplyToMessageId = Nothing
---     , sendMessageReplyMarkup = Nothing
-
---     }
-
--- both:: (a -> b) -> (a, a) -> (b, b)
--- both f (x, x') = (f x, f x')
 
 
 updateToAction :: Update -> Model -> Maybe Action
@@ -85,6 +72,8 @@ updateToAction update _ =
             *> (AddFriend <$> (userUsername =<< messageFrom msg) <*> Just (Prelude.last wordsText))
             
         "/help" -> Just Help 
+
+
         
         _ -> Nothing
 
