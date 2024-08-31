@@ -100,3 +100,5 @@ getFriends user = do
                           , username = fromSql (row !! 1)
                           }) result
     return users
+
+

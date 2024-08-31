@@ -9,7 +9,7 @@ import DB
 import Control.Monad.Trans.Maybe (MaybeT(runMaybeT))
 
 type Model = ()
-data Action = AddToSql Text | AddFriend Text Text | Help | SMOKE Location 
+data Action = AddToSql Text | AddFriend Text Text | Help | SendSmoke Location Text
 
 helpMsgText :: Text.Text
 helpMsgText = Text.pack $ "Здарова заядлый курильщик, сейчас данный бот умеет всего ничего: \n"
@@ -20,13 +20,13 @@ helpMsgText = Text.pack $ "Здарова заядлый курильщик, с�
 
 smokeButton :: KeyboardButton
 smokeButton = KeyboardButton
-    { keyboardButtonText         = Text.pack "SMOKE"
-    , keyboardButtonRequestUsers = Nothing
-    , keyboardButtonRequestChat  = Nothing
-    , keyboardButtonRequestContact = Nothing
+    { keyboardButtonText            = Text.pack "SMOKE"
+    , keyboardButtonRequestUsers    = Nothing
+    , keyboardButtonRequestChat     = Nothing
+    , keyboardButtonRequestContact  = Nothing
     , keyboardButtonRequestLocation = Just True
-    , keyboardButtonRequestPoll  = Nothing
-    , keyboardButtonWebApp       = Nothing
+    , keyboardButtonRequestPoll     = Nothing
+    , keyboardButtonWebApp          = Nothing
     }
 
 startKeyboard :: ReplyKeyboardMarkup
@@ -52,30 +52,43 @@ smokeBot = BotApp
 
 
 
+
 updateToAction :: Update -> Model -> Maybe Action
 updateToAction update _ =
-  updateMessage update >>=
-  \msg -> messageText msg >>=
-  \mText ->
-    let wordsText = Text.words mText
-        command = Prelude.head wordsText
-    in guard (not $ Prelude.null wordsText) *>
-    case Text.unpack command of
+  case updateMessage update of
+        Just msg -> 
+            case (messageText msg, userUsername =<< messageFrom msg, messageLocation msg) of
 
-        "/start" ->
-         AddToSql . Text.append (Text.singleton  '@') <$> (userUsername =<< messageFrom msg)
+                (Just mText, Just username, _) ->
+                 let wordsText = Text.words mText
+                     command   = Prelude.head wordsText
+                     arg      = case length wordsText of
+                            2 -> Text.unpack $ last wordsText
+                            _ ->  ""
+                    in 
+    
+                    case (Text.unpack command, arg) of
+
+                        ("/start", "") ->
+                           Just $ AddToSql username 
             
 
-        "/addfriend" ->
-         guard (Prelude.length wordsText == 2)
-            *> guard (Text.head (Prelude.last wordsText) == '@')
-            *> (AddFriend <$> (userUsername =<< messageFrom msg) <*> Just (Prelude.last wordsText))
+                        ("/addfriend", friendname) ->  
+                            Just $ (AddFriend username) (Text.pack friendname)
             
-        "/help" -> Just Help 
+                        ("/help", _) -> Just Help 
+                        
+                        _ -> Nothing
+                
 
+                (_, Just username, Just loc) -> Just $ ((SendSmoke loc) username)
+
+        Nothing -> Nothing
 
         
-        _ -> Nothing
+
+
+
 
 
 handleAction :: Action -> Model -> Eff Action Model
