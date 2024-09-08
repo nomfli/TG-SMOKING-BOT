@@ -4,21 +4,21 @@
 # For advanced use and comprehensive documentation of the format, please see:
 # https://docs.haskellstack.org/en/stable/yaml_configuration/
 
-# A 'specific' Stackage snapshot or a compiler version.
+# Resolver to choose a 'specific' stackage snapshot or a compiler version.
 # A snapshot resolver dictates the compiler version and the set of packages
 # to be used for project dependencies. For example:
 #
-# snapshot: lts-22.28
-# snapshot: nightly-2024-07-05
-# snapshot: ghc-9.6.6
+# resolver: lts-22.7
+# resolver: nightly-2024-01-20
+# resolver: ghc-9.6.4
 #
 # The location of a snapshot can be provided as a file or url. Stack assumes
 # a snapshot provided as a file might change, whereas a url resource does not.
 #
-# snapshot: ./custom-snapshot.yaml
-# snapshot: https://example.com/snapshots/2024-01-01.yaml
-snapshot:
-  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/32.yaml
+# resolver: ./custom-snapshot.yaml
+# resolver: https://example.com/snapshots/2023-01-01.yaml
+resolver:
+  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/33.yaml
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -29,9 +29,9 @@ snapshot:
 #   subdirs:
 #   - auto-update
 #   - wai
-#packages:
-#-
-# Dependency packages to be pulled from upstream that are not in the snapshot.
+packages:
+- .
+# Dependency packages to be pulled from upstream that are not in the resolver.
 # These entries can reference officially published versions as well as
 # forks / in-progress versions pinned to a git hash. For example:
 #
@@ -39,16 +39,22 @@ snapshot:
 # - acme-missiles-0.3
 # - git: https://github.com/commercialhaskell/stack.git
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
-
+#
+# extra-deps: []
 extra-deps:
-  - cron-0.7.1@sha256:fe138e48e7022be7f4f52c51768060eafb3d8f033b4fff65c0a9af78642c57b3,3878
-  - telegram-bot-api-7.4@sha256:1990c94851bef9210d8f711fea8ea0003cc0ba72b6b79485936a994883e57857,11238
-  - HDBC-sqlite3-2.3.3.1@sha256:5025fd94d02b9b3f0b8b8233796dd9a85a0b3dda6503c6e671e3eddbc51cb4d4,2424
-  - parsec-3.1.17.0@sha256:8407cbd428d7f640a0fff8891bd2f7aca13cebe70a5e654856f8abec9a648b56,5149
-  - telegram-bot-simple-0.14.1@sha256:3683652770965817f30822b38c6ea0c7dd343eb131252beb014988eda6b16b50,5644
-  - text-2.0.2@sha256:71b5fa8c64d3c1fd0a08f993463220867b08290a2256e94b0952bf0e8f5a45cc,9905
+- git: https://github.com/fizruk/telegram-bot-simple.git
+  commit: 88870623f2dec1a44535722e0aa4af9ae9ff07b3
+  subdirs:
+  - telegram-bot-api
+  - telegram-bot-simple
 
-# Override default flag values for project packages and extra-deps
+- git: git@github.com:MichaelXavier/cron.git
+  commit: 5f5b662a1d7abc3951ea5a2a625bbf3e83f7a11a
+
+- git: git@github.com:hdbc/hdbc-sqlite3.git
+  commit: 6446abb80d4bbc182bb1ea289c821594ca21ed25
+
+# Override default flag values for local packages and extra-deps
 # flags: {}
 
 # Extra package databases containing global packages
@@ -59,7 +65,7 @@ extra-deps:
 #
 # Require a specific version of Stack, using version ranges
 # require-stack-version: -any # Default
-# require-stack-version: ">=3.1"
+# require-stack-version: ">=2.15"
 #
 # Override the architecture used by Stack, especially useful on Windows
 # arch: i386

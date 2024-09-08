@@ -26,6 +26,7 @@ dependencies:
 - HDBC-sqlite3
 - telegram-bot-api
 - telegram-bot-simple
+- transformers
 
 ghc-options:
 - -Wall
