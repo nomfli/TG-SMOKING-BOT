@@ -43,7 +43,7 @@ packages:
 # extra-deps: []
 extra-deps:
 - git: https://github.com/fizruk/telegram-bot-simple.git
-  commit: ed7169d2794e7f6b0639ce7c6629a028726e31bf
+  commit: 88870623f2dec1a44535722e0aa4af9ae9ff07b3
   subdirs:
   - telegram-bot-api
   - telegram-bot-simple

@@ -27,6 +27,7 @@ library
   exposed-modules:
       DB
       TG
+      TXT
   other-modules:
       Paths_CIGARETTS
   autogen-modules:
@@ -41,6 +42,7 @@ library
     , telegram-bot-api
     , telegram-bot-simple
     , text
+    , transformers
   default-language: Haskell2010
 
 executable CIGARETTS-exe
@@ -60,6 +62,7 @@ executable CIGARETTS-exe
     , telegram-bot-api
     , telegram-bot-simple
     , text
+    , transformers
   default-language: Haskell2010
 
 test-suite CIGARETTS-test
@@ -80,4 +83,5 @@ test-suite CIGARETTS-test
     , telegram-bot-api
     , telegram-bot-simple
     , text
+    , transformers
   default-language: Haskell2010
