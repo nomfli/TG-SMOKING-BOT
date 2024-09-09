@@ -8,7 +8,7 @@ import Telegram.Bot.API
 helpMsgText :: Text.Text
 helpMsgText = Text.pack $ "Здарова заядлый курильщик, сейчас данный бот умеет всего ничего: \n"
                       ++ "/help - для просьбы о помощи \n"
-                      ++ "/addfriend yourfriendname для добавления друга в друзья \n"
+                      ++ "/addfriend @yourfriendname для добавления друга в друзья \n"
                       ++ "/smoke для того, чтобы твои друзья увидели, где ты начинаешь покур"
 
 
@@ -23,7 +23,7 @@ smokeLocRequest lan lon chatid = SendLocationRequest
     , sendLocationLatitude                  = lan
     , sendLocationLongitude                 = lon
     , sendLocationHorizontalAccuracy        = Nothing
-    , sendLocationLivePeriod                = 300  
+    , sendLocationLivePeriod                = 60
     , sendLocationHeading                   = Nothing
     , sendLocationProximityAlertRadius      = Nothing
     , sendLocationDisableNotification       = Nothing
