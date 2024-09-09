@@ -27,7 +27,6 @@ library
   exposed-modules:
       DB
       TG
-      TXT
   other-modules:
       Paths_CIGARETTS
   autogen-modules:
