@@ -1,4 +1,4 @@
-module TXT (helpMsgText, smokeLocRequest, startKeyboard, smokeMesRequest) where
+module TXT (helpMsgText, smokeLocRequest, startKeyboard ) where
 
 import qualified Data.Text                        as Text
 import Data.Text (Text)
@@ -8,29 +8,8 @@ import Telegram.Bot.API
 helpMsgText :: Text.Text
 helpMsgText = Text.pack $ "Здарова заядлый курильщик, сейчас данный бот умеет всего ничего: \n"
                       ++ "/help - для просьбы о помощи \n"
-                      ++ "/addfriend yourfriendname(да, да это тг друга, но без собачки) для добавления друга в друзья \n"
+                      ++ "/addfriend @yourfriendname для добавления друга в друзья \n"
                       ++ "/smoke для того, чтобы твои друзья увидели, где ты начинаешь покур"
-
-
-
-
-smokeMesRequest :: Text -> Integer -> SendMessageRequest
-smokeMesRequest username  chatid  = SendMessageRequest
-    { sendMessageBusinessConnectionId   = Nothing
-    , sendMessageChatId                 = SomeChatId $ ChatId  chatid
-    , sendMessageMessageThreadId        = Nothing
-    , sendMessageText                   = Text.pack $ ( "Твой друг") ++  (Text.unpack username) ++ ( "вышел на покур")  
-    , sendMessageParseMode              = Nothing
-    , sendMessageEntities               = Nothing
-    , sendMessageLinkPreviewOptions     = Nothing
-    , sendMessageDisableNotification    = Nothing
-    , sendMessageProtectContent         = Nothing
-    , sendMessageMessageEffectId        = Nothing
-    , sendMessageReplyToMessageId       = Nothing
-    , sendMessageReplyParameters        = Nothing
-    , sendMessageReplyMarkup            = Nothing
-    }
-
 
 
 
@@ -44,7 +23,7 @@ smokeLocRequest lan lon chatid = SendLocationRequest
     , sendLocationLatitude                  = lan
     , sendLocationLongitude                 = lon
     , sendLocationHorizontalAccuracy        = Nothing
-    , sendLocationLivePeriod                = 300  
+    , sendLocationLivePeriod                = 60
     , sendLocationHeading                   = Nothing
     , sendLocationProximityAlertRadius      = Nothing
     , sendLocationDisableNotification       = Nothing

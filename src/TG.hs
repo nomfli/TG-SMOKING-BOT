@@ -2,42 +2,12 @@ module TG (smokeBot) where
 import qualified Data.Text      as Text
 import Data.Text                  (Text)
 import Control.Monad.IO.Class     (liftIO)
-import Control.Monad              (guard)
 import Telegram.Bot.API
+import Data.Maybe                 (fromMaybe)
 import Telegram.Bot.Simple
-import DB
-import Control.Monad.Trans.Maybe (MaybeT(runMaybeT))
-
-type Model = ()
-data Action = AddToSql Text | AddFriend Text Text | Help | SendSmoke Location Text
-
-helpMsgText :: Text.Text
-helpMsgText = Text.pack $ "Здарова заядлый курильщик, сейчас данный бот умеет всего ничего: \n"
-                      ++ "/help - для просьбы о помощи \n"
-                      ++ "/addfriend @yourfriendname для добавления друга в друзья \n"
-                      ++ "/smoke для того, чтобы твои друзья увидели, где ты начинаешь покур"
-
-
-smokeButton :: KeyboardButton
-smokeButton = KeyboardButton
-    { keyboardButtonText            = Text.pack "SMOKE"
-    , keyboardButtonRequestUsers    = Nothing
-    , keyboardButtonRequestChat     = Nothing
-    , keyboardButtonRequestContact  = Nothing
-    , keyboardButtonRequestLocation = Just True
-    , keyboardButtonRequestPoll     = Nothing
-    , keyboardButtonWebApp          = Nothing
-    }
-
-startKeyboard :: ReplyKeyboardMarkup
-startKeyboard = ReplyKeyboardMarkup
-    { replyKeyboardMarkupKeyboard = [[smokeButton]]
-    , replyKeyboardMarkupResizeKeyboard = Just True
-    , replyKeyboardMarkupOneTimeKeyboard = Just True
-    , replyKeyboardMarkupSelective = Nothing
-    , replyKeyboardMarkupInputFieldSelector = Nothing
-    , replyKeyboardMarkupIsPersistent = Nothing
-    }
+import DB                       
+import Control.Monad.Trans.Maybe (MaybeT(runMaybeT), hoistMaybe)
+import TXT 
 
 
 
@@ -49,6 +19,14 @@ smokeBot = BotApp
   , botHandler      = handleAction
   , botJobs         = []
   }
+
+
+type Model = ()
+data Action = AddToSql Text Integer | AddFriend Text Text | Help | SendSmoke Location (Maybe User) | DeleteFriend Text Text
+
+
+
+
 
 
 
@@ -70,7 +48,7 @@ updateToAction update _ =
                     case (Text.unpack command, arg) of
 
                         ("/start", "") ->
-                           Just $ AddToSql username 
+                            (AddToSql username) <$> (fmap (read . (flip (!!) 1) . words . show .userId) $ messageFrom msg)
             
 
                         ("/addfriend", friendname) ->  
@@ -78,10 +56,13 @@ updateToAction update _ =
             
                         ("/help", _) -> Just Help 
                         
+                        ("/deletefriend", friendname) -> Just $ DeleteFriend (username) (Text.pack friendname) 
+
                         _ -> Nothing
                 
 
-                (_, Just username, Just loc) -> Just $ ((SendSmoke loc) username)
+                (_, Just username, Just loc) -> Just $ SendSmoke loc (messageFrom msg)
+                _ -> Nothing
 
         Nothing -> Nothing
 
@@ -95,8 +76,8 @@ handleAction :: Action -> Model -> Eff Action Model
 handleAction action model =
     case action of
 
-        AddToSql username -> model <# do
-            _ <- liftIO (runMaybeT $ addUser username)
+        AddToSql username chatId -> model <# do
+            _ <- liftIO (runMaybeT $ addUser username chatId)
             reply (toReplyMessage helpMsgText)
              { replyMessageReplyMarkup = Just (SomeReplyKeyboardMarkup startKeyboard) }
             return ()
@@ -104,9 +85,12 @@ handleAction action model =
         AddFriend username friendname -> model <# do
             mu1 <- liftIO (runMaybeT $ getUser username)
             mu2 <- liftIO (runMaybeT $ getUser friendname)
-            _ <- case (mu1, mu2) of
+            friendsConnection <- case (mu1, mu2) of
                 (Just u1, Just u2) -> liftIO $ runMaybeT $ addFriend u1 u2
                 _ -> return Nothing
+            case friendsConnection of
+              Just _ -> liftIO $ putStrLn "Friends added"
+              _ -> liftIO $ putStrLn "GG"
             return ()
 
         Help -> model <# do
@@ -115,6 +99,11 @@ handleAction action model =
             
 
         SendSmoke loc user -> model <# do
+            
+
+
+
+
 
             let username = ((=<<) :: (User -> Maybe Text) -> Maybe User -> Maybe Text) userUsername user
             xs <- case username of
@@ -127,6 +116,8 @@ handleAction action model =
             let xxs = fromMaybe [] xs
             _ <- mapM_ runTG $ map (smokeLocRequest lan lon . DB.chatId) xxs 
             return ()
-        
             
-        _ -> return model        
+        _ -> return model
+
+
+
