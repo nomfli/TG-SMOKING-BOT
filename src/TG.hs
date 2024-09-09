@@ -99,11 +99,6 @@ handleAction action model =
             
 
         SendSmoke loc user -> model <# do
-            
-
-
-
-
 
             let username = ((=<<) :: (User -> Maybe Text) -> Maybe User -> Maybe Text) userUsername user
             xs <- case username of
@@ -117,7 +112,4 @@ handleAction action model =
             _ <- mapM_ runTG $ map (smokeLocRequest lan lon . DB.chatId) xxs 
             return ()
             
-        _ -> return model
-
-
-
+        _ -> return model        
