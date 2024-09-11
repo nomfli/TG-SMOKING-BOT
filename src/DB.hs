@@ -35,7 +35,6 @@ createDB = do
 
 
 
-
 addUser ::  Text -> Integer -> MaybeT IO TableUser
 addUser tgusername chatid = do
     conn <- liftIO $ connectSqlite3 "Users.db"

@@ -1,6 +1,6 @@
 module TG (smokeBot) where
 import qualified Data.Text      as Text
-import Data.Text                  (Text)
+import Data.Text                  (Text, snoc)
 import Control.Monad.IO.Class     (liftIO)
 import Telegram.Bot.API
 import Data.Maybe                 (fromMaybe)
@@ -22,7 +22,7 @@ smokeBot = BotApp
 
 
 type Model = ()
-data Action = AddToSql Text Integer | AddFriend Text Text | Help | SendSmoke Location (Maybe User) | DeleteFriend Text Text
+data Action = AddToSql Text Integer | AddFriend Text Text | Help | SendSmoke Location (Maybe User) | DeleteFriend Text Text | FriendList Text
 
 
 
@@ -54,9 +54,11 @@ updateToAction update _ =
                         ("/addfriend", friendname) ->  
                             Just $ (AddFriend username) (Text.pack friendname)
             
-                        ("/help", _) -> Just Help 
+                        ("/help","") -> Just Help 
                         
                         ("/deletefriend", friendname) -> Just $ DeleteFriend (username) (Text.pack friendname) 
+                        
+                        ("/FriendList", "") -> Just $ FriendList username 
 
                         _ -> Nothing
                 
@@ -92,13 +94,18 @@ handleAction action model =
         Help -> model <# do
            replyText helpMsgText
 
-            
+        FriendList username -> model <# do
+            let xs  = map ((\x -> Text.append x $ Text.pack "\n") . DB.username) <$> (getFriends =<< getUser username)
+            let xxs = Text.concat <$> xs
+            replyText <$> (runMaybeT xxs)
+            return()
+
 
         SendSmoke loc user -> model <# do
             let username = ((=<<) :: (User -> Maybe Text) -> Maybe User -> Maybe Text) userUsername user
             xs <- case username of
                 Just us ->
-                       liftIO (runMaybeT $ getFriends =<< (getUser us))
+                       liftIO (runMaybeT $ getFriends =<< getUser us)
                 _ -> return Nothing
                         
             let lon = locationLongitude loc

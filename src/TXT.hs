@@ -32,9 +32,6 @@ smokeMesRequest username chatid = SendMessageRequest
 
 
 
-
-
-
 smokeLocRequest :: Float -> Float -> Integer -> SendLocationRequest
 smokeLocRequest lan lon chatid = SendLocationRequest
     { sendLocationBusinessConnectionId      = Nothing
