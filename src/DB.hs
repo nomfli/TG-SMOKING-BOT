@@ -1,3 +1,4 @@
+
 module DB (TableUser(..), TableFriends, createDB, addUser, getUser, addFriend, getFriends) where
 import Prelude hiding (id)
 import Database.HDBC (run, commit, disconnect, toSql, fromSql, quickQuery')
