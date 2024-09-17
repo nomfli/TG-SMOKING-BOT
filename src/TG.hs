@@ -1,6 +1,7 @@
 module TG (smokeBot) where
 import qualified Data.Text      as Text
 import Data.Text                  (Text, snoc)
+import Data.Text.IO               (putStrLn)
 import Control.Monad.IO.Class     (liftIO)
 import Telegram.Bot.API
 import Data.Maybe                 (fromMaybe)
@@ -11,24 +12,17 @@ import TXT
 
 
 
-
 smokeBot :: BotApp Model Action
 smokeBot = BotApp
-  { botInitialModel = ()
+  { botInitialModel = ()  
   , botAction       = updateToAction
   , botHandler      = handleAction
   , botJobs         = []
   }
 
 
-type Model = ()
-data Action = AddToSql Text Integer | AddFriend Text Text | Help | SendSmoke Location (Maybe User) | DeleteFriend Text Text | FriendList Text
-
-
-
-
-
-
+type Model = ()  
+data Action = AddToSql Text Integer | AddFriend Text Text | Help | SendSmoke Location (Maybe User) | DeleteFriend Text Text  
 
 
 updateToAction :: Update -> Model -> Maybe Action
@@ -48,17 +42,16 @@ updateToAction update _ =
                     case (Text.unpack command, arg) of
 
                         ("/start", "") ->
-                            (AddToSql username) <$> (fmap (read . (flip (!!) 1) . words . show .userId) $ messageFrom msg)
-            
+                           AddToSql username <$> (read . (!! 1) . words . show .userId) <$> messageFrom msg
 
                         ("/addfriend", friendname) ->  
-                            Just $ (AddFriend username) (Text.pack friendname)
+                            Just $ AddFriend username (Text.pack $ friendname)
+                        
+                        ("/deletefriend", friendname) -> 
+                            Just $ DeleteFriend username (Text.pack $ friendname) 
             
                         ("/help","") -> Just Help 
                         
-                        ("/deletefriend", friendname) -> Just $ DeleteFriend (username) (Text.pack friendname) 
-                        
-                        ("/FriendList", "") -> Just $ FriendList username 
 
                         _ -> Nothing
                 
@@ -87,18 +80,34 @@ handleAction action model =
                 (Just u1, Just u2) -> liftIO $ runMaybeT $ addFriend u1 u2
                 _ -> return Nothing
             case friendsConnection of
-              Just _ -> liftIO $ putStrLn "Friends added"
-              _ -> liftIO $ putStrLn "GG"
+                Just _ -> do 
+                    liftIO $ Data.Text.IO.putStrLn $ addFriendMsg username friendname
+                    replyText $ addFriendMsg username friendname 
+                _ -> do 
+                    liftIO $ Data.Text.IO.putStrLn $ Text.append username (Text.append (Text.pack " can't add ") friendname)
+                    replyText $ addFriendBadMsg username friendname
             return ()
 
         Help -> model <# do
            replyText helpMsgText
 
-        FriendList username -> model <# do
-            let xs  = map ((\x -> Text.append x $ Text.pack "\n") . DB.username) <$> (getFriends =<< getUser username)
-            let xxs = Text.concat <$> xs
-            replyText <$> (runMaybeT xxs)
-            return()
+        
+        DeleteFriend username friendname -> model <# do
+            mu1 <- liftIO (runMaybeT $ getUser username ) 
+            mu2 <- liftIO (runMaybeT $ getUser friendname )
+            xs <- case (mu1 , mu2 ) of
+                    (Just usr, Just friend) -> liftIO $ runMaybeT $ deleteFriend usr friend
+                    _ -> return Nothing
+            case xs of
+                Just _ -> do  
+                    liftIO $ Data.Text.IO.putStrLn $ deleteFriendMsg username friendname   
+                    replyText $ deleteFriendMsg username friendname   
+
+                _ -> do
+                    liftIO $ Data.Text.IO.putStrLn $ Text.append  username (Text.append (Text.pack " can't deleted ") friendname)
+                    replyText $ deleteFriendBadMsg username friendname 
+            return() 
+
 
 
         SendSmoke loc user -> model <# do
@@ -107,12 +116,10 @@ handleAction action model =
                 Just us ->
                        liftIO (runMaybeT $ getFriends =<< getUser us)
                 _ -> return Nothing
-                        
-            let lon = locationLongitude loc
-            let lan = locationLatitude  loc
+                 
             let xxs = fromMaybe [] xs
             let realUsrName = fromMaybe (Text.pack "")  username
-            _ <- mapM_ runTG $ map (smokeLocRequest lan lon . DB.chatId) xxs
+            _ <- mapM_ runTG $ map (smokeLocRequest (locationLatitude loc) (locationLongitude loc) . DB.chatId) xxs
             _ <- mapM_ runTG $ map (smokeMesRequest realUsrName . DB.chatId) xxs
             return ()
             
