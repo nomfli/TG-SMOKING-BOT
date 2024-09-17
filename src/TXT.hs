@@ -1,4 +1,4 @@
-module TXT (helpMsgText, smokeLocRequest, startKeyboard ) where
+module TXT (helpMsgText, smokeLocRequest, startKeyboard, smokeMesRequest, deleteFriendMsg, addFriendMsg, deleteFriendBadMsg, addFriendBadMsg) where
 
 import qualified Data.Text                        as Text
 import Data.Text (Text)
@@ -8,10 +8,29 @@ import Telegram.Bot.API
 helpMsgText :: Text.Text
 helpMsgText = Text.pack $ "Здарова заядлый курильщик, сейчас данный бот умеет всего ничего: \n"
                       ++ "/help - для просьбы о помощи \n"
-                      ++ "/addfriend @yourfriendname для добавления друга в друзья \n"
-                      ++ "/smoke для того, чтобы твои друзья увидели, где ты начинаешь покур"
+                      ++ "/addfriend yourfriendname для добавления друга в друзья(без собачки) \n"
+                      ++ "/deletefriend yourfriendname для удаления дружбы \n"
+                      ++ "и большая кнопка SMOKE, для того, чтобы вызвать всех своих друзей на покур \n"
+                      ++ "важно, чтобы у тебя было полное разрешение GPS к твоему ТГ"
 
 
+
+smokeMesRequest :: Text -> Integer -> SendMessageRequest 
+smokeMesRequest username chatid = SendMessageRequest
+    { sendMessageBusinessConnectionId   = Nothing 
+    , sendMessageChatId                 = SomeChatId $ ChatId chatid
+    , sendMessageMessageThreadId        = Nothing 
+    , sendMessageText                   = Text.pack $ "Твой друг " ++ Text.unpack username ++ " вышел покурить"
+    , sendMessageParseMode              = Nothing 
+    , sendMessageEntities               = Nothing 
+    , sendMessageLinkPreviewOptions     = Nothing 
+    , sendMessageDisableNotification    = Nothing 
+    , sendMessageProtectContent         = Nothing 
+    , sendMessageMessageEffectId        = Nothing 
+    , sendMessageReplyToMessageId       = Nothing 
+    , sendMessageReplyParameters        = Nothing 
+    , sendMessageReplyMarkup            = Nothing 
+    }
 
 
 
@@ -23,7 +42,7 @@ smokeLocRequest lan lon chatid = SendLocationRequest
     , sendLocationLatitude                  = lan
     , sendLocationLongitude                 = lon
     , sendLocationHorizontalAccuracy        = Nothing
-    , sendLocationLivePeriod                = 60
+    , sendLocationLivePeriod                = 300
     , sendLocationHeading                   = Nothing
     , sendLocationProximityAlertRadius      = Nothing
     , sendLocationDisableNotification       = Nothing
@@ -33,8 +52,6 @@ smokeLocRequest lan lon chatid = SendLocationRequest
     , sendLocationReplyParameters           = Nothing
     , sendLocationReplyMarkup               = Nothing
     }
-
-
 
 
 smokeButton :: KeyboardButton
@@ -60,7 +77,22 @@ startKeyboard = ReplyKeyboardMarkup
     }
 
 
+deleteFriendMsg :: Text -> Text -> Text 
+deleteFriendMsg username friendname = Text.append (Text.append (Text.pack " deleted ") friendname) (Text.pack " from the friendlist") 
 
 
+addFriendMsg :: Text -> Text -> Text
+addFriendMsg username friendname = Text.append (Text.append (Text.pack " added ") friendname) (Text.pack " to the friendlist") 
+
+addFriendBadMsg :: Text -> Text -> Text 
+addFriendBadMsg username friendname = (Text.pack "Error ") `Text.append` username
+                                         `Text.append` (Text.pack " can't add ")
+                                         `Text.append` friendname  `Text.append` (Text.pack " to friends ") 
+
+
+deleteFriendBadMsg :: Text -> Text -> Text 
+deleteFriendBadMsg  username friendname = (Text.pack "Error ") `Text.append` username
+                                         `Text.append` (Text.pack " can't delete ")
+                                         `Text.append` friendname  `Text.append` (Text.pack " from friends ") 
 
 

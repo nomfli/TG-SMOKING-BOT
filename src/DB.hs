@@ -1,5 +1,5 @@
+module DB (TableUser(..), TableFriends, createDB, addUser, getUser, addFriend, getFriends, deleteFriend) where
 
-module DB (TableUser(..), TableFriends, createDB, addUser, getUser, addFriend, getFriends) where
 import Prelude hiding (id)
 import Database.HDBC (run, commit, disconnect, toSql, fromSql, quickQuery')
 import Control.Monad.IO.Class (liftIO)
@@ -33,7 +33,6 @@ createDB = do
   _ <- run conn "CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_friendship ON Friends (WeakID, StrongID)" []
   commit conn
   disconnect conn
-
 
 
 
@@ -72,7 +71,6 @@ addFriend user friend = do
     let query = "INSERT OR IGNORE INTO Friends (StrongId, WeakId) VALUES (?,?)"
     res <- liftIO $ run conn query [toSql usrId, toSql frndId]
     liftIO $ commit conn
-    liftIO $ putStrLn "Friend added successfully"
     liftIO $ disconnect conn
     case res of
         1 -> return TableFriends { strongId = usrId, weakId = frndId }
@@ -109,10 +107,9 @@ deleteFriend user friend = do
     conn <- liftIO $ connectSqlite3 "Users.db"
     let usrId = userid user
     let frndId = userid friend
-    let query = "DELETE OR IGNORE FROM Friends where StrongId = ? and WeakId = ?"  
+    let query = "DELETE FROM Friends WHERE StrongId = ? AND WeakId = ?"
     res <- liftIO $ run conn query [toSql usrId, toSql frndId]
     liftIO $ commit conn
-    liftIO $ putStrLn "Friend deleted successfully"
     liftIO $ disconnect conn
     case res of
         1 -> return TableFriends { strongId = usrId, weakId = frndId }
