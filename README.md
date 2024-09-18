@@ -12,10 +12,9 @@ Share Location: Share your live geolocation with all your friends for 5 minutes,
 
 
 ## Requirements
-Add Friends: Add other users as friends by their username.
-Remove Friends: Remove friends from your list.
-Share Location: Share your live geolocation with all your friends for 5 minutes, making it easier to meet up for a smoke break.
-
+Haskell
+Stack
+SQLite3
 
 ## Setup
 ```
