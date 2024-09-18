@@ -1,5 +1,4 @@
-module TG (smokeBot) where  
-    
+module TG (smokeBot) where
 import qualified Data.Text      as Text
 import Data.Text                  (Text, snoc)
 import Data.Text.IO               (putStrLn)
@@ -10,6 +9,7 @@ import Telegram.Bot.Simple
 import DB                       
 import Control.Monad.Trans.Maybe (MaybeT(runMaybeT), hoistMaybe)
 import TXT 
+
 
 
 smokeBot :: BotApp Model Action
@@ -23,6 +23,7 @@ smokeBot = BotApp
 
 type Model = ()  
 data Action = AddToSql Text Integer | AddFriend Text Text | Help | SendSmoke Location (Maybe User) | DeleteFriend Text Text | FriendLists Text  
+
 
 updateToAction :: Update -> Model -> Maybe Action
 updateToAction update _ =
@@ -128,14 +129,8 @@ handleAction action model =
                 xs  <- liftIO $ runMaybeT (getFriends =<< getUser username)
                 case xs of
                   Just flist ->  
-                    replyText $ Text.concat $ addNumberToList 1 $ map (\x -> x `Text.append` ( Text.pack " \n")) (map DB.username flist) 
-                  Nothing -> return () 
+                    replyText $ Text.concat $ map (\x -> x `Text.append` ( Text.pack "\n ")) (map DB.username flist) 
+                  Nothing -> BotM () 
+                return()
         _ -> return model
 
-
-
-addNumberToList :: Integer -> [Text] -> [Text]
-addNumberToList _ [] = []
-addNumberToList a (x:xs) = ((Text.pack $ show a) `Text.append` (Text.pack ". ") `Text.append` x ) : (addNumberToList (a +  1)) xs
-                         
-    

@@ -10,6 +10,7 @@ helpMsgText = Text.pack $ "Здарова заядлый курильщик, с�
                       ++ "/help - для просьбы о помощи \n"
                       ++ "/addfriend yourfriendname для добавления друга в друзья(без собачки) \n"
                       ++ "/deletefriend yourfriendname для удаления дружбы \n"
+                      ++ "/friendlist можешь посмотреть на самых знатных курильщиков \n"
                       ++ "и большая кнопка SMOKE, для того, чтобы вызвать всех своих друзей на покур \n"
                       ++ "важно, чтобы у тебя было полное разрешение GPS к твоему ТГ"
 
@@ -78,11 +79,11 @@ startKeyboard = ReplyKeyboardMarkup
 
 
 deleteFriendMsg :: Text -> Text -> Text 
-deleteFriendMsg username friendname = Text.append (Text.append (Text.pack " deleted ") friendname) (Text.pack " from the friendlist") 
+deleteFriendMsg username friendname = username `Text.append` (Text.pack "deleted ") `Text.append` friendname `Text.append` (Text.pack " from the friendlist") 
 
 
 addFriendMsg :: Text -> Text -> Text
-addFriendMsg username friendname = Text.append (Text.append (Text.pack " added ") friendname) (Text.pack " to the friendlist") 
+addFriendMsg username friendname = username `Text.append` (Text.pack " added ") `Text.append` friendname `Text.append` (Text.pack " to the friendlist") 
 
 addFriendBadMsg :: Text -> Text -> Text 
 addFriendBadMsg username friendname = (Text.pack "Error ") `Text.append` username

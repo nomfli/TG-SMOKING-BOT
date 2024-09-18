@@ -1,4 +1,4 @@
-module DB (TableUser(..), TableFriends, createDB, addUser, getUser, addFriend, getFriends, deleteFriend) where
+module DB (TableUser(chatId, username), TableFriends, createDB, addUser, getUser, addFriend, getFriends, deleteFriend) where
 
 import Prelude hiding (id)
 import Database.HDBC (run, commit, disconnect, toSql, fromSql, quickQuery')
